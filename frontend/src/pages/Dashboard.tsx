@@ -8,7 +8,8 @@ import {
   Clock, Calendar, Users, UserX, Timer, 
   Play, Pause, RotateCcw, Bell, AlertTriangle, ShieldCheck,
   Radio, Volume2, VolumeX, Activity, ArrowUpRight, Cpu,
-  Search, Filter, Download, Trash, Terminal, Layers, CheckCircle2, ChevronRight, ZapOff
+  Search, Filter, Download, Trash, Terminal, Layers, CheckCircle2, ChevronRight, ZapOff,
+  X, Maximize2, Thermometer, Eye, LayoutGrid, List, Sliders
 } from 'lucide-react';
 
 export const FLOORS = [
@@ -298,6 +299,21 @@ export default function Dashboard() {
 
   const [selectedDetectorFloor, setSelectedDetectorFloor] = React.useState<string>('All');
   const [emptyRoomCountdowns, setEmptyRoomCountdowns] = React.useState<Record<string, number>>({});
+  // Active Pop-Up Modal Room State
+  const [activeModalRoom, setActiveModalRoom] = React.useState<typeof CLASSROOM_SUITES[0] | null>(null);
+  // Card Display Toggle Mode ('grid' | 'table')
+  const [cardDisplayMode, setCardDisplayMode] = React.useState<'grid' | 'table'>('grid');
+
+  // Close modal on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveModalRoom(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const [actionNotification, setActionNotification] = React.useState<{
     title: string;
@@ -1501,139 +1517,300 @@ export default function Dashboard() {
         </div>
 
         {/* Floor Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 mb-5 p-2 bg-emerald-100/40 rounded-xl border border-emerald-200/70">
-          <span className="text-xs font-black uppercase text-emerald-950 px-2 flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5 text-emerald-700" /> Floor:
-          </span>
-          {[
-            { id: 'All', label: 'All Facilities (20 Rooms)' },
-            { id: 'Ground Floor', label: 'Ground Floor (5)' },
-            { id: '1st Floor', label: '1st Floor (6)' },
-            { id: '2nd Floor', label: '2nd Floor (3)' },
-            { id: 'Top Floor', label: 'Top Floor (6)' }
-          ].map((tab) => {
-            const isSelected = selectedDetectorFloor === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSelectedDetectorFloor(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  isSelected 
-                    ? 'bg-emerald-800 text-white shadow-xs' 
-                    : 'bg-white text-slate-700 hover:bg-emerald-50 border border-emerald-200'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* Floor Navigation Tabs & View Mode Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 p-2 bg-emerald-100/40 rounded-xl border border-emerald-200/70">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-black uppercase text-emerald-950 px-2 flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-emerald-700" /> Floor:
+            </span>
+            {[
+              { id: 'All', label: 'All Facilities (20 Rooms)' },
+              { id: 'Ground Floor', label: 'Ground Floor (5)' },
+              { id: '1st Floor', label: '1st Floor (6)' },
+              { id: '2nd Floor', label: '2nd Floor (3)' },
+              { id: 'Top Floor', label: 'Top Floor (6)' }
+            ].map((tab) => {
+              const isSelected = selectedDetectorFloor === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSelectedDetectorFloor(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    isSelected 
+                      ? 'bg-emerald-800 text-white shadow-xs' 
+                      : 'bg-white text-slate-700 hover:bg-emerald-50 border border-emerald-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Card View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-emerald-200 self-start sm:self-auto shadow-xs">
+            <button
+              type="button"
+              onClick={() => setCardDisplayMode('grid')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                cardDisplayMode === 'grid' 
+                  ? 'bg-emerald-800 text-white shadow-xs' 
+                  : 'text-slate-600 hover:bg-emerald-50'
+              }`}
+              title="Grid Card View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Cards</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCardDisplayMode('table')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                cardDisplayMode === 'table' 
+                  ? 'bg-emerald-800 text-white shadow-xs' 
+                  : 'text-slate-600 hover:bg-emerald-50'
+              }`}
+              title="Detailed Table View"
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>List Table</span>
+            </button>
+          </div>
         </div>
 
-        {/* 20 Rooms Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {(selectedDetectorFloor === 'All' 
-            ? CLASSROOM_SUITES 
-            : CLASSROOM_SUITES.filter(c => c.floor === selectedDetectorFloor)
-          ).map((classroom) => {
-            const isOccupied = !!occupancy[classroom.id];
-            const isOn = !!controls[classroom.id];
-            const isEmptyAndOn = !isOccupied && isOn;
+        {cardDisplayMode === 'grid' ? (
+          /* 20 Rooms Grid Cards */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(selectedDetectorFloor === 'All' 
+              ? CLASSROOM_SUITES 
+              : CLASSROOM_SUITES.filter(c => c.floor === selectedDetectorFloor)
+            ).map((classroom) => {
+              const isOccupied = !!occupancy[classroom.id];
+              const isOn = !!controls[classroom.id];
+              const isEmptyAndOn = !isOccupied && isOn;
 
-            return (
-              <div 
-                key={classroom.id}
-                className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
-                  isEmptyAndOn
-                    ? 'bg-rose-50/90 border-rose-300 ring-2 ring-rose-400/40 shadow-sm'
-                    : isOn
-                    ? 'bg-emerald-50/70 border-emerald-300 shadow-xs'
-                    : 'bg-white border-slate-200/90 shadow-xs hover:border-slate-300'
-                }`}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-900 leading-tight">{classroom.name}</h4>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{classroom.floor} &bull; {classroom.capacity}</p>
+              return (
+                <div 
+                  key={classroom.id}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                    isEmptyAndOn
+                      ? 'bg-rose-50/90 border-rose-300 ring-2 ring-rose-400/40 shadow-sm'
+                      : isOn
+                      ? 'bg-emerald-50/70 border-emerald-300 shadow-xs'
+                      : 'bg-white border-slate-200/90 shadow-xs hover:border-slate-300'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div 
+                        className="cursor-pointer group"
+                        onClick={() => setActiveModalRoom(classroom)}
+                      >
+                        <h4 className="font-bold text-sm text-slate-900 leading-tight group-hover:text-emerald-700 transition-colors flex items-center gap-1">
+                          {classroom.name}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{classroom.floor} &bull; {classroom.capacity}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] font-mono font-bold text-slate-400">
+                          {classroom.loadKw} kW
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveModalRoom(classroom)}
+                          className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md text-emerald-800 bg-emerald-100/90 hover:bg-emerald-200 border border-emerald-300 transition flex items-center gap-0.5 cursor-pointer"
+                          title="Open Interactive Room Controls & Diagnostics Pop-Up"
+                        >
+                          <Eye className="w-2.5 h-2.5" />
+                          <span>Pop-Up</span>
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-slate-400">
-                      {classroom.loadKw} kW
-                    </span>
+
+                    {/* Switch Control Card Toggle */}
+                    <div className={`mt-3 p-2.5 rounded-xl border flex items-center justify-between transition-colors ${
+                      isOn ? 'bg-emerald-100/60 border-emerald-300' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Circuit Power</span>
+                        <span className={`text-xs font-bold flex items-center gap-1.5 mt-0.5 ${isOn ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          <span className={`w-2 h-2 rounded-full ${isOn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                          {isOn ? 'ACTIVE (ON)' : 'OFF'}
+                        </span>
+                      </div>
+
+                      <label className="relative inline-flex items-center cursor-pointer select-none">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={isOn} 
+                          onChange={() => toggleControl(classroom.id, classroom.name, classroom.floor)} 
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-500 transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 peer-checked:after:border-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5 shadow-xs"></div>
+                      </label>
+                    </div>
+
+                    {/* PIR Sensor Indicator & Toggle */}
+                    <div className="mt-2.5 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-slate-500 font-semibold">PIR Status:</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleOccupancy(classroom.id)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition flex items-center gap-1 cursor-pointer ${
+                          isOccupied 
+                            ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-emerald-300' 
+                            : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 animate-pulse'
+                        }`}
+                        title="Click to toggle PIR sensor"
+                      >
+                        {isOccupied ? (
+                          <><Users className="w-3 h-3 text-emerald-700" /> Occupied</>
+                        ) : (
+                          <><UserX className="w-3 h-3 text-amber-700" /> Empty</>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* 4-Second Autonomous Auto-Off Countdown Badge if Vacant & Switch is ON */}
+                    {isEmptyAndOn && (
+                      <div className="mt-2.5 text-[11px] font-bold text-rose-950 bg-rose-100/90 border border-rose-300 p-2 rounded-xl flex items-center justify-between shadow-xs">
+                        <div className="flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 animate-bounce" />
+                          <span className="leading-tight">Not in use! Auto-off in:</span>
+                        </div>
+                        <span className="px-2.5 py-0.5 bg-rose-600 text-white rounded-md text-xs font-mono font-black shadow-xs animate-pulse">
+                          {emptyRoomCountdowns[classroom.id] !== undefined ? `${emptyRoomCountdowns[classroom.id]}s` : '4s'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Switch Control */}
-                  <div className={`mt-3 p-2.5 rounded-xl border flex items-center justify-between transition-colors ${
-                    isOn ? 'bg-emerald-100/60 border-emerald-300' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Circuit Power</span>
-                      <span className={`text-xs font-bold flex items-center gap-1.5 mt-0.5 ${isOn ? 'text-emerald-700' : 'text-slate-500'}`}>
-                        <span className={`w-2 h-2 rounded-full ${isOn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                        {isOn ? 'ACTIVE (ON)' : 'OFF'}
-                      </span>
-                    </div>
-
-                    <label className="relative inline-flex items-center cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={isOn} 
-                        onChange={() => toggleControl(classroom.id, classroom.name, classroom.floor)} 
-                      />
-                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-500 transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 peer-checked:after:border-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5 shadow-xs"></div>
-                    </label>
-                  </div>
-
-                  {/* PIR Sensor Indicator & Toggle */}
-                  <div className="mt-2.5 flex items-center justify-between text-xs">
-                    <span className="text-[11px] text-slate-500 font-semibold">PIR Status:</span>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalRoom(classroom)}
+                      className="text-slate-600 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3 h-3" /> Details
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleOccupancy(classroom.id)}
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition flex items-center gap-1 cursor-pointer ${
-                        isOccupied 
-                          ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-emerald-300' 
-                          : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 animate-pulse'
-                      }`}
-                      title="Click to toggle PIR sensor"
+                      className="text-primary-600 font-bold hover:underline cursor-pointer"
                     >
-                      {isOccupied ? (
-                        <><Users className="w-3 h-3 text-emerald-700" /> Occupied</>
-                      ) : (
-                        <><UserX className="w-3 h-3 text-amber-700" /> Empty</>
-                      )}
+                      Simulate {isOccupied ? 'Exit' : 'Enter'} →
                     </button>
                   </div>
-
-                  {/* 4-Second Autonomous Auto-Off Countdown Badge if Vacant & Switch is ON */}
-                  {isEmptyAndOn && (
-                    <div className="mt-2.5 text-[11px] font-bold text-rose-950 bg-rose-100/90 border border-rose-300 p-2 rounded-xl flex items-center justify-between shadow-xs">
-                      <div className="flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 animate-bounce" />
-                        <span className="leading-tight">Not in use! Auto-off in:</span>
-                      </div>
-                      <span className="px-2.5 py-0.5 bg-rose-600 text-white rounded-md text-xs font-mono font-black shadow-xs animate-pulse">
-                        {emptyRoomCountdowns[classroom.id] !== undefined ? `${emptyRoomCountdowns[classroom.id]}s` : '4s'}
-                      </span>
-                    </div>
-                  )}
                 </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Detailed Table List View */
+          <div className="overflow-x-auto rounded-2xl border border-emerald-200 bg-white shadow-xs">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-emerald-50 text-emerald-950 text-[11px] font-bold uppercase tracking-wider border-b border-emerald-200">
+                <tr>
+                  <th className="p-3">Room / Space</th>
+                  <th className="p-3">Floor & Type</th>
+                  <th className="p-3">Load (kW)</th>
+                  <th className="p-3">Power Switch Toggle</th>
+                  <th className="p-3">PIR Occupancy</th>
+                  <th className="p-3">4s Auto-Off Status</th>
+                  <th className="p-3 text-right">Interactive Pop-Up</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(selectedDetectorFloor === 'All' 
+                  ? CLASSROOM_SUITES 
+                  : CLASSROOM_SUITES.filter(c => c.floor === selectedDetectorFloor)
+                ).map((classroom) => {
+                  const isOccupied = !!occupancy[classroom.id];
+                  const isOn = !!controls[classroom.id];
+                  const isEmptyAndOn = !isOccupied && isOn;
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Type: {classroom.type}</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleOccupancy(classroom.id)}
-                    className="text-primary-600 font-bold hover:underline cursor-pointer"
-                  >
-                    Simulate {isOccupied ? 'Exit' : 'Enter'} →
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  return (
+                    <tr key={classroom.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3">
+                        <button
+                          type="button"
+                          onClick={() => setActiveModalRoom(classroom)}
+                          className="font-bold text-slate-900 hover:text-emerald-700 text-left cursor-pointer"
+                        >
+                          {classroom.name}
+                        </button>
+                        <span className="text-[10px] text-slate-400 block">{classroom.capacity}</span>
+                      </td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">
+                          {classroom.floor}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">{classroom.type}</span>
+                      </td>
+                      <td className="p-3 font-mono font-bold text-slate-700">
+                        {classroom.loadKw} kW
+                      </td>
+                      <td className="p-3">
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={isOn} 
+                            onChange={() => toggleControl(classroom.id, classroom.name, classroom.floor)} 
+                          />
+                          <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-500 transition-all duration-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-slate-300 peer-checked:after:border-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5 shadow-xs"></div>
+                          <span className={`text-[11px] font-bold ml-2 ${isOn ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            {isOn ? 'ON' : 'OFF'}
+                          </span>
+                        </label>
+                      </td>
+                      <td className="p-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleOccupancy(classroom.id)}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
+                            isOccupied 
+                              ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
+                              : 'bg-amber-100 text-amber-900 border-amber-300 animate-pulse'
+                          }`}
+                        >
+                          {isOccupied ? (
+                            <><Users className="w-3 h-3 text-emerald-700" /> Occupied</>
+                          ) : (
+                            <><UserX className="w-3 h-3 text-amber-700" /> Empty</>
+                          )}
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        {isEmptyAndOn ? (
+                          <span className="px-2 py-0.5 bg-rose-600 text-white rounded-md text-[10px] font-mono font-bold animate-pulse inline-flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            Auto-Off: {emptyRoomCountdowns[classroom.id] !== undefined ? `${emptyRoomCountdowns[classroom.id]}s` : '4s'}
+                          </span>
+                        ) : isOn ? (
+                          <span className="text-[10px] text-emerald-700 font-bold">Protected Lecture</span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-semibold">Standby (OFF)</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setActiveModalRoom(classroom)}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition inline-flex items-center gap-1 cursor-pointer shadow-xs"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Pop-Up ↗</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* AI Energy Optimization Agent */}
@@ -1982,6 +2159,304 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* ======================================================== */}
+      {/* INTERACTIVE ROOM DIAGNOSTICS & CONTROLS POP-UP MODAL */}
+      {/* ======================================================== */}
+      {activeModalRoom && (() => {
+        const isModalRoomOccupied = !!occupancy[activeModalRoom.id];
+        const isModalRoomOn = !!controls[activeModalRoom.id];
+        const isModalRoomEmptyAndOn = !isModalRoomOccupied && isModalRoomOn;
+        const countdownSec = emptyRoomCountdowns[activeModalRoom.id] !== undefined ? emptyRoomCountdowns[activeModalRoom.id] : 4;
+        const currentAmps = isModalRoomOn ? ((activeModalRoom.loadKw * 1000) / 230).toFixed(1) : '0.0';
+        const hourlyCost = isModalRoomOn ? (activeModalRoom.loadKw * 7.5).toFixed(2) : '0.00';
+
+        return (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md transition-all duration-200"
+            onClick={() => setActiveModalRoom(null)}
+          >
+            <div 
+              className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 p-5 sm:p-6 space-y-5 animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      {activeModalRoom.floor}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
+                      {activeModalRoom.type}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
+                      ID: {activeModalRoom.id}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-emerald-700" />
+                    <span>{activeModalRoom.name}</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Capacity: {activeModalRoom.capacity} &bull; Rated Baseline Load: {activeModalRoom.loadKw} kW
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => setActiveModalRoom(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  title="Close Pop-Up (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Dynamic Status / Auto-Off Alert Banner */}
+              {isModalRoomEmptyAndOn ? (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-rose-950">
+                        Vacant Room Detected &mdash; Auto-Off In Progress!
+                      </h4>
+                      <p className="text-xs text-rose-800 mt-0.5">
+                        Autonomous PIR sensor detected 0 occupants. Cutting power automatically in {countdownSec}s.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <span className="px-3 py-1.5 bg-rose-600 text-white font-mono font-black text-sm rounded-xl shadow-sm">
+                      {countdownSec}s Left
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleControl(activeModalRoom.id, activeModalRoom.name, activeModalRoom.floor)}
+                      className="px-3 py-1.5 bg-rose-200 hover:bg-rose-300 text-rose-900 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Cut Now
+                    </button>
+                  </div>
+                </div>
+              ) : isModalRoomOn ? (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-xs">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-emerald-950">Active Lecture Session (Protected)</h4>
+                      <p className="text-[11px] text-emerald-800">Occupancy verified via PIR radar. Circuit fully energized.</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-200/80 text-emerald-900 text-xs font-bold rounded-lg">
+                    Occupied
+                  </span>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-slate-200 text-slate-600 rounded-xl">
+                      <ZapOff className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-slate-800">Circuit Standby &mdash; Power Disconnected</h4>
+                      <p className="text-[11px] text-slate-500">Zero energy waste. Toggle switch below to energize facility.</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">
+                    OFF
+                  </span>
+                </div>
+              )}
+
+              {/* Main Interactive Controls: Switch & PIR Sensor */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Circuit Power Relay Switch Toggle */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  isModalRoomOn ? 'bg-emerald-50/80 border-emerald-300' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-emerald-600" />
+                      Circuit Breaker Relay
+                    </span>
+                    <span className={`text-xs font-mono font-black px-2 py-0.5 rounded-md ${
+                      isModalRoomOn ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-700'
+                    }`}>
+                      {isModalRoomOn ? 'ENERGIZED' : 'OPEN'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        {isModalRoomOn ? 'Power is ON' : 'Power is OFF'}
+                      </p>
+                      <p className="text-[11px] text-slate-500">Click toggle switch to trigger relay</p>
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={isModalRoomOn} 
+                        onChange={() => toggleControl(activeModalRoom.id, activeModalRoom.name, activeModalRoom.floor)} 
+                      />
+                      <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 transition-all duration-200 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border after:border-slate-300 peer-checked:after:border-white after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:after:translate-x-7 shadow-sm"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* PIR Motion Sensor Toggle */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-purple-600" />
+                      PIR Motion Telemetry
+                    </span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                      isModalRoomOccupied 
+                        ? 'bg-purple-100 text-purple-800 border border-purple-300' 
+                        : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    }`}>
+                      {isModalRoomOccupied ? 'Motion Active' : 'No Motion'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        {isModalRoomOccupied ? 'Classroom Occupied' : 'Classroom Vacant'}
+                      </p>
+                      <p className="text-[11px] text-slate-500">Simulate student presence</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleOccupancy(activeModalRoom.id)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs transition border cursor-pointer flex items-center gap-1.5 ${
+                        isModalRoomOccupied
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-700 shadow-xs'
+                          : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-xs'
+                      }`}
+                    >
+                      {isModalRoomOccupied ? <UserX className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+                      <span>Set {isModalRoomOccupied ? 'Empty' : 'Occupied'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Electrical Telemetry Live Gauges */}
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2.5 flex items-center gap-1">
+                  <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                  Live Electrical Telemetry (Sub-Meter)
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Voltage</span>
+                    <span className="text-base font-mono font-black text-slate-900">230.4 V</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">AC 50Hz</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Amperage</span>
+                    <span className={`text-base font-mono font-black ${isModalRoomOn ? 'text-emerald-700' : 'text-slate-400'}`}>
+                      {currentAmps} A
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Current Draw</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Active Power</span>
+                    <span className={`text-base font-mono font-black ${isModalRoomOn ? 'text-emerald-700' : 'text-slate-400'}`}>
+                      {isModalRoomOn ? `${activeModalRoom.loadKw} kW` : '0.00 kW'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">0.96 Power Factor</span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Hourly Cost</span>
+                    <span className={`text-base font-mono font-black ${isModalRoomOn ? 'text-amber-700' : 'text-slate-400'}`}>
+                      ₹{hourlyCost}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">@ ₹7.50 / kWh</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Climate & Connected Hardware Assets */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <Thermometer className="w-3.5 h-3.5 text-blue-500" />
+                    Indoor Climate & Environmental Status:
+                  </span>
+                  <div className="flex items-center gap-2 font-mono text-[11px] text-slate-600">
+                    <span className="bg-white px-2 py-0.5 rounded border border-slate-200">24.1°C</span>
+                    <span className="bg-white px-2 py-0.5 rounded border border-slate-200">52% RH</span>
+                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">AQI 38 (Good)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/70 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">HVAC Unit</span>
+                    <span className="font-bold text-slate-800 text-xs">1.5T Inverter Split AC</span>
+                    <span className={`text-[10px] font-bold block mt-0.5 ${isModalRoomOn ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {isModalRoomOn ? '● Compressor Engaged' : '○ Standby'}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Lighting Luminaires</span>
+                    <span className="font-bold text-slate-800 text-xs">4x 36W LED Panel Grid</span>
+                    <span className={`text-[10px] font-bold block mt-0.5 ${isModalRoomOn ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {isModalRoomOn ? '● Lumens Output: 100%' : '○ Switched Off'}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">IoT Hardware Controller</span>
+                    <span className="font-bold text-slate-800 text-xs">ESP32 + PIR Sensor</span>
+                    <span className="text-[10px] font-mono text-emerald-600 font-bold block mt-0.5">
+                      ● Node Node-{activeModalRoom.id.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer Controls */}
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Changes sync live with campus controller &amp; WebSockets</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleOccupancy(activeModalRoom.id)}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                  >
+                    Simulate {isModalRoomOccupied ? 'Student Exit' : 'Student Entry'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalRoom(null)}
+                    className="px-4 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                  >
+                    Done &amp; Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
