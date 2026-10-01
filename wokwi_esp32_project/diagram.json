@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "author": "CampusIQ",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic", "top": -150, "left": -150, "attrs": { "distance": "60" } },
+    { "type": "wokwi-potentiometer", "id": "timeSlider", "top": -150, "left": 150, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "roomSwitch", "top": 50, "left": -150, "attrs": {} },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": 150, "left": -50, "attrs": {} },
+    { "type": "wokwi-led", "id": "ledGreen", "top": -100, "left": 150, "attrs": { "color": "green" } },
+    { "type": "wokwi-led", "id": "ledYellow", "top": -50, "left": 150, "attrs": { "color": "yellow" } },
+    { "type": "wokwi-led", "id": "ledRed", "top": 0, "left": 150, "attrs": { "color": "red" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": -60, "left": 200, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "top": -10, "left": 200, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "top": 40, "left": 200, "attrs": { "value": "220" } }
+  ],
+  "connections": [
+    ["esp:5", "ultrasonic:TRIG", "green", ["v0"]],
+    ["esp:18", "ultrasonic:ECHO", "blue", ["v0"]],
+    ["esp:5V", "ultrasonic:VCC", "red", ["v0"]],
+    ["esp:GND.1", "ultrasonic:GND", "black", ["v0"]],
+
+    ["esp:3V3", "timeSlider:VCC", "red", ["v0"]],
+    ["esp:GND.1", "timeSlider:GND", "black", ["v0"]],
+    ["esp:34", "timeSlider:SIG", "purple", ["v0"]],
+
+    ["esp:GND.1", "roomSwitch:1", "black", ["v0"]],
+    ["esp:25", "roomSwitch:2", "orange", ["v0"]],
+
+    ["esp:32", "buzzer:PIN", "blue", ["v0"]],
+    ["esp:GND.2", "buzzer:GND", "black", ["v0"]],
+
+    ["esp:2", "ledGreen:A", "green", ["v0"]],
+    ["ledGreen:C", "r1:1", "black", ["v0"]],
+    ["r1:2", "esp:GND.2", "black", ["v0"]],
+
+    ["esp:4", "ledYellow:A", "yellow", ["v0"]],
+    ["ledYellow:C", "r2:1", "black", ["v0"]],
+    ["r2:2", "esp:GND.2", "black", ["v0"]],
+
+    ["esp:16", "ledRed:A", "red", ["v0"]],
+    ["ledRed:C", "r3:1", "black", ["v0"]],
+    ["r3:2", "esp:GND.2", "black", ["v0"]]
+  ]
+}

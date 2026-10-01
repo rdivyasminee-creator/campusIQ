@@ -1,0 +1,74 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+  
+  --color-secondary-50: #eff6ff;
+  --color-secondary-100: #dbeafe;
+  --color-secondary-500: #3b82f6;
+  --color-secondary-600: #2563eb;
+  --color-secondary-700: #1d4ed8;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+  }
+  .dark {
+    /* Invert Grays */
+    --color-gray-50: #030712;
+    --color-gray-100: #111827;
+    --color-gray-200: #1f2937;
+    --color-gray-300: #374151;
+    --color-gray-400: #4b5563;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #9ca3af;
+    --color-gray-700: #d1d5db;
+    --color-gray-800: #e5e7eb;
+    --color-gray-900: #f3f4f6;
+    --color-gray-950: #f9fafb;
+    
+    /* Invert White and Black */
+    --color-white: #0f172a;
+    --color-black: #ffffff;
+  }
+  .dark body {
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+  }
+}
+
+@layer utilities {
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

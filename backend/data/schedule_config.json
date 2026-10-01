@@ -1,0 +1,31 @@
+{
+  "startTime": "09:00",
+  "endTime": "18:00",
+  "autoOffAtEndTime": true,
+  "emptyClassroomDetectorActive": true,
+  "autoOffTimerActive": false,
+  "autoOffTimerEndsAt": null,
+  "autoOffTimerDurationSec": 10,
+  "occupancy": {
+    "gf-md": true,
+    "gf-office": false,
+    "gf-reception": false,
+    "gf-account": true,
+    "gf-ecell": false,
+    "f1-mca": false,
+    "f1-mba": true,
+    "f1-lib": true,
+    "f1-read": false,
+    "f1-washb": false,
+    "f1-washg": false,
+    "f2-bca": false,
+    "f2-bsc": true,
+    "f2-bba": true,
+    "tf-conf": false,
+    "tf-store": false,
+    "tf-rest": false,
+    "tf-washb": false,
+    "tf-washg": false,
+    "tf-common": false
+  }
+}
